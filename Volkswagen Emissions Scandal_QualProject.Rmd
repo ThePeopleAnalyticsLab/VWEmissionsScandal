@@ -6,6 +6,7 @@ output: html_document
 Hello world! Is this working? Huh? 
 ---
 Edit at 11:20AM
+Edit at 11:39AM
 #"Manuscript Worthy" section is below.
 
 ```{r Manuscript Worthy}
