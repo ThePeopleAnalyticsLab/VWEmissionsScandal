@@ -10,6 +10,7 @@ Edit at 11:39AM
 
 Did this get pushed?
 Check mic check. 
+Yes, it got pushed. 10-4. 
 #"Manuscript Worthy" section is below.
 
 ```{r Manuscript Worthy}
