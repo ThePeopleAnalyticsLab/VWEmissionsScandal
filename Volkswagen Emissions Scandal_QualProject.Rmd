@@ -7,6 +7,9 @@ Hello world! Is this working? Huh?
 ---
 Edit at 11:20AM
 Edit at 11:39AM
+
+Did this get pushed?
+Check mic check. 
 #"Manuscript Worthy" section is below.
 
 ```{r Manuscript Worthy}
