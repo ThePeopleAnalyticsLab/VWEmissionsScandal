@@ -1,0 +1,107 @@
+---
+title: "Untitled"
+author: "Christopher M. Castille (Owner) C2 Consulting, LLC."
+date: "6/30/2017"
+output: html_document
+---
+
+#"Manuscript Worthy" section is below.
+
+```{r Manuscript Worthy}
+#Load packages.
+require(tm)
+
+#Automating Google searches.
+getGoogleURL <- function(search.term, domain = '.com', quotes=TRUE) 
+    {
+    search.term <- gsub(' ', '%20', search.term)
+    if(quotes) search.term <- paste('%22', search.term, '%22', sep='') 
+        getGoogleURL <- paste('http://www.google', domain, '/search?q=',
+        search.term, sep='')
+    }
+
+    getGoogleLinks <- function(google.url) {
+   doc <- getURL(google.url, httpheader = c("User-Agent" = "R
+                                             (2.10.0)"))
+   html <- htmlTreeParse(doc, useInternalNodes = TRUE, error=function
+                          (...){})
+   nodes <- getNodeSet(html, "//h3[@class='r']//a")
+   return(sapply(nodes, function(x) x <- xmlAttrs(x)[["href"]]))
+    }
+
+#How do we automate searching that swaps out the search terms that the RAs used?
+search.term <- "Volkswagen Emissions Scandal"
+quotes <- "TRUE"
+search.url <- getGoogleURL(search.term=search.term, quotes=quotes)
+
+links <- getGoogleLinks(search.url)
+links <- as.data.frame(links)
+links <- substr(links$links,8,2000)
+links <- as.data.frame(links)
+
+#How do we crawl through these websites and extract meaningful information?
+```
+
+```{r setup, include=FALSE, Chris's practice }
+library(XML)
+library(RCurl)
+getGoogleURL <- function(search.term, domain = '.com', quotes=TRUE) 
+    {
+    search.term <- gsub(' ', '%20', search.term)
+    if(quotes) search.term <- paste('%22', search.term, '%22', sep='') 
+        getGoogleURL <- paste('http://www.google', domain, '/search?q=',
+        search.term, sep='')
+    }
+
+    getGoogleLinks <- function(google.url) {
+   doc <- getURL(google.url, httpheader = c("User-Agent" = "R
+                                             (2.10.0)"))
+   html <- htmlTreeParse(doc, useInternalNodes = TRUE, error=function
+                          (...){})
+   nodes <- getNodeSet(html, "//h3[@class='r']//a")
+   return(sapply(nodes, function(x) x <- xmlAttrs(x)[["href"]]))
+}
+
+search.term <- "Volkswagen Emissions Scandal"
+quotes <- "TRUE"
+search.url <- getGoogleURL(search.term=search.term, quotes=quotes)
+
+links <- getGoogleLinks(search.url)
+links <- as.data.frame(links)
+links <- substr(links$links,8,2000)
+links <- as.data.frame(links)
+
+dyn.load(paste0(system2('/usr/libexec/java_home', stdout = TRUE), '/jre/lib/server/libjvm.dylib'))
+library(rJava)
+library(Rcrawler)
+#Activate a crawler
+websitedat <- Rcrawler(Website = links$links, no_cores = 4, no_conn = 4)
+
+library(caret)
+library(tm)
+library(SnowballC)
+#load data
+data <- c("All dogs go to heaven", "All cats go to hell")
+data <- as.data.frame(data)
+#Training data.
+corpus <- VCorpus(VectorSource(data))
+##Create a text document matrix.
+tdm <- DocumentTermMatrix(corpus, list(removePunctuation = TRUE, stopwords = TRUE, stemming = TRUE, removeNumbers = TRUE))
+##Convert to a data.frame for training and assign a classification (factor) to each document.
+train <- as.matrix(tdm)
+
+#This is where we supervise the algorithm. 
+train <- cbind(train, c(0,1))
+colnames(train)[ncol(train)] <- 'y'
+train <- as.data.frame(train)
+train$y <- as.factor(train$y)
+##Train.
+fit <- train(y ~ ., data = train, method = 'bayesglm')
+##Check accuracy on training.
+MCHk1 <- predict(fit, newdata = train)
+MCHk1 <- as.data.frame(MCHk1)
+
+#We could have all of this work printed to a google sheet...
+require(googlesheets)
+
+```
