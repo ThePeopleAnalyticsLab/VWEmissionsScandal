@@ -3,6 +3,7 @@ title: "Untitled"
 author: "Christopher M. Castille (Owner) C2 Consulting, LLC."
 date: "6/30/2017"
 output: html_document
+Did this branch correctly?
 ---
 #"Manuscript Worthy" section is below.
 
