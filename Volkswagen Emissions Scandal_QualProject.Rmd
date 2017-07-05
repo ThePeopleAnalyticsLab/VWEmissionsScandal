@@ -29,6 +29,7 @@ getGoogleURL <- function(search.term, domain = '.com', quotes=TRUE)
     }
 
 #How do we automate searching that swaps out the search terms that the RAs used?
+    #AF Note -- I think this may require that we create a "search_term" vector that lists all the various search terms the RAs used. Then, instead of running the following function just on "Volkswagen Emissions Scandal", we would run it on the entire "search_term" vector, which should then run the following function on each component within the search_term vector. 
 search.term <- "Volkswagen Emissions Scandal"
 quotes <- "TRUE"
 search.url <- getGoogleURL(search.term=search.term, quotes=quotes)
