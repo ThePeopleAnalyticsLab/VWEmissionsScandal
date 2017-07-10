@@ -9,8 +9,36 @@ output: html_document
 ```{r Manuscript Worthy}
 #Load packages.
 require(tm)
+require(RCurl)
+require(XML)
+require(data.table)
+require(googlesheets)
+suppressMessages(library(dplyr))
 
-#Automating Google searches.
+######## Step1: Download Data ######## 
+#Get googlesheet containing our data. You may need to get your own acces key to access the appropriate dataset. 
+mysheets <- gs_ls()
+
+#load datasets and extract search terms. Note: RAs did not consistently report the search terms used across datasets, so I am combining the search term datapoints and eliminating redundancies. 
+data <- gs_title("Copy of Volkswagen Case Study")
+searchterms1 <- data %>%
+  gs_read(ws = "Garbage Can")
+searchterms2 <- data %>%
+  gs_read(ws = "Timeline")
+searchterms2 <- as.data.frame(searchterms2$'Search Term')
+names(searchterms2) <- c("Search Term")
+
+#Consolidate search terms list.
+search.term <- rbind(searchterms1,searchterms2)
+searchterms <- unique(search.term)
+
+###Should generate 48 unique search terms. 
+
+
+
+
+
+######## Step 2: Automate Google Searches to generate list of sites to scrape ######## 
 getGoogleURL <- function(search.term, domain = '.com', quotes=TRUE) 
     {
     search.term <- gsub(' ', '%20', search.term)
@@ -28,80 +56,100 @@ getGoogleURL <- function(search.term, domain = '.com', quotes=TRUE)
    return(sapply(nodes, function(x) x <- xmlAttrs(x)[["href"]]))
     }
 
+#Automate searching google using the same search terms that the RAs used. 
+search.term <- searchterms$`Search Term`
+quotes <- "FALSE"
+search.url1 <- getGoogleURL(search.term=search.term, quotes=quotes)
+
+#Vary the use of quotes
+search.term <- searchterms$`Search Term`
+=======
 #How do we automate searching that swaps out the search terms that the RAs used?
     #AF Note -- I think this may require that we create a "search_term" vector that lists all the various search terms the RAs used. Then, instead of running the following function just on "Volkswagen Emissions Scandal", we would run it on the entire "search_term" vector, which should then run the following function on each component within the search_term vector. 
 search.term <- "Volkswagen Emissions Scandal"
 quotes <- "TRUE"
-search.url <- getGoogleURL(search.term=search.term, quotes=quotes)
+search.url2 <- getGoogleURL(search.term=search.term, quotes=quotes)
 
+#Bind the search urls.
+search.url <- rbind(search.url1,search.url2)
+
+#Get a data frame of unique search links.
 links <- getGoogleLinks(search.url)
 links <- as.data.frame(links)
 links <- substr(links$links,8,2000)
-links <- as.data.frame(links)
+links <- as.data.frame(unique(links))
 
-#How do we crawl through these websites and extract meaningful information?
-```
+########  Currently, this generates 856 unique links ########  
 
-```{r setup, include=FALSE, Chris's practice }
-library(XML)
-library(RCurl)
-getGoogleURL <- function(search.term, domain = '.com', quotes=TRUE) 
-    {
-    search.term <- gsub(' ', '%20', search.term)
-    if(quotes) search.term <- paste('%22', search.term, '%22', sep='') 
-        getGoogleURL <- paste('http://www.google', domain, '/search?q=',
-        search.term, sep='')
-    }
 
-    getGoogleLinks <- function(google.url) {
-   doc <- getURL(google.url, httpheader = c("User-Agent" = "R
-                                             (2.10.0)"))
-   html <- htmlTreeParse(doc, useInternalNodes = TRUE, error=function
-                          (...){})
-   nodes <- getNodeSet(html, "//h3[@class='r']//a")
-   return(sapply(nodes, function(x) x <- xmlAttrs(x)[["href"]]))
-}
 
-search.term <- "Volkswagen Emissions Scandal"
-quotes <- "TRUE"
-search.url <- getGoogleURL(search.term=search.term, quotes=quotes)
+#NEEDED: Find a way to scrape the text from these links. Step 3 or 5?
 
-links <- getGoogleLinks(search.url)
-links <- as.data.frame(links)
-links <- substr(links$links,8,2000)
-links <- as.data.frame(links)
 
-dyn.load(paste0(system2('/usr/libexec/java_home', stdout = TRUE), '/jre/lib/server/libjvm.dylib'))
-library(rJava)
-library(Rcrawler)
-#Activate a crawler
-websitedat <- Rcrawler(Website = links$links, no_cores = 4, no_conn = 4)
 
+########  Step x: Build Machine Learning Portion Algorithm to Classify Text ######## 
+#http://rstudio-pubs-static.s3.amazonaws.com/46246_f0deebd7ccbf4163a33f669bb5c91a70.html
+
+#Activate relevant packages
 library(caret)
 library(tm)
 library(SnowballC)
-#load data
-data <- c("All dogs go to heaven", "All cats go to hell")
-data <- as.data.frame(data)
+library(class)
+
+##Extract our tiemeline text. 
+timeline <- data %>%
+  gs_read(ws = "TimelineDoc")
+
+#Include only variables with event data. Note: df = data frame.
+df <- timeline[c(1,3)]
+
+###Should have all the narrative descriptions that we placed into the manuscript. Eventually we can sub in the raw "plagirarized" text if we like, but this should suffice for now. Currently has 56 entries.
+
 #Training data.
-corpus <- VCorpus(VectorSource(data))
-##Create a text document matrix.
-tdm <- DocumentTermMatrix(corpus, list(removePunctuation = TRUE, stopwords = TRUE, stemming = TRUE, removeNumbers = TRUE))
+text <- as.character(df$Event)
+#You could just classify the first three cases. 
+#text <- text[1:3]
+corpus <- VCorpus(VectorSource(text))
+
+##Create a term document matrix.
+tdm <- DocumentTermMatrix(corpus, list(removePunctuation = TRUE, stripWhitespace = TRUE, content_transformer(tolower), stopwords = TRUE, stemming = FALSE, removeNumbers = FALSE))
+
 ##Convert to a data.frame for training and assign a classification (factor) to each document.
 train <- as.matrix(tdm)
 
-#This is where we supervise the algorithm. 
-train <- cbind(train, c(0,1))
+#This is where we supervise the algorithm. Basically, we're telling the algorithm that each document (row) is a distinct class (here, class = "event" in our dataset). So it needs to identity the combination of words that distinguish one event from the other 
+train <- cbind(train, df$EventID)
 colnames(train)[ncol(train)] <- 'y'
 train <- as.data.frame(train)
 train$y <- as.factor(train$y)
+
 ##Train.
-fit <- train(y ~ ., data = train, method = 'bayesglm')
+require(foreach)
+registerDoSEQ()
+#Training control prevents model over-fitting. 
+tc <- trainControl(method = "cv", number = 7, verboseIter=FALSE , preProcOptions="pca", allowParallel=TRUE)
+bayesglm <- train(y ~ ., data = train, method = 'bayesglm', trControl=tc)
+#rf <- train(y ~ ., data = train, method = 'rf', trControl=tc)
+#svmr <- train(y ~ ., data = train, method = 'svmrRadial', trControl=tc)
+NN <- train(y ~ ., data = train, method = 'nnet', trControl=tc, verbose=FALSE)
+svml <- train(y ~ ., data = train, method = 'svmLinear', trControl=tc)
+logitboost <- train(y ~ ., data = train, method = 'LogitBoost', trControl=tc)
+
+#This is used to complare the models against one anoher.
+model <- c("Bayes GLM", "Neural Net", "SVM (linear)", "LogitBoost")
+Accuracy <- c(max(bayesglm$results$Accuracy),
+              max(NN$results$Accuracy),
+              max(svml$results$Accuracy),
+              max(logitboost$results$Accuracy))
+Kappa <- c(max(bayesglm$results$Kappa),
+           max(NN$results$Kappa),
+           max(svml$results$Kappa),
+           max(logitboost$results$Kappa))
+performance <- cbind(model,Accuracy,Kappa)
+knitr::kable(performance)
+
 ##Check accuracy on training.
-MCHk1 <- predict(fit, newdata = train)
+MCHk1 <- predict(bayesglm, newdata = train)
 MCHk1 <- as.data.frame(MCHk1)
-
-#We could have all of this work printed to a google sheet...
-require(googlesheets)
-
 ```
+
