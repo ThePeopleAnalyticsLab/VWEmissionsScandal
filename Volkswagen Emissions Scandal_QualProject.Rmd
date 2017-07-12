@@ -184,5 +184,7 @@ Added line 182 (via RStudio).
 Added line 184 (via GitHub).
 
 Added line 186 (via RStudio).
+
+Added line 188 (via GitHub). 
 ```
 
