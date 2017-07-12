@@ -20,6 +20,8 @@ suppressMessages(library(dplyr))
 mysheets <- gs_ls()
 
 #load datasets and extract search terms. Note: RAs did not consistently report the search terms used across datasets, so I am combining the search term datapoints and eliminating redundancies. 
+
+#NOTE: The timeline sheets need to be consolidated so we have a single timeline. 
 data <- gs_title("Copy of Volkswagen Case Study")
 searchterms1 <- data %>%
   gs_read(ws = "Garbage Can")
@@ -63,7 +65,7 @@ search.url1 <- getGoogleURL(search.term=search.term, quotes=quotes)
 
 #Vary the use of quotes
 search.term <- searchterms$`Search Term`
-=======
+#=======
 #How do we automate searching that swaps out the search terms that the RAs used?
     #AF Note -- I think this may require that we create a "search_term" vector that lists all the various search terms the RAs used. Then, instead of running the following function just on "Volkswagen Emissions Scandal", we would run it on the entire "search_term" vector, which should then run the following function on each component within the search_term vector. 
 search.term <- "Volkswagen Emissions Scandal"
@@ -153,3 +155,8 @@ MCHk1 <- predict(bayesglm, newdata = train)
 MCHk1 <- as.data.frame(MCHk1)
 ```
 
+```{}
+
+This is Andrew's test. 
+
+```
