@@ -159,4 +159,6 @@ This is Andrew's test.
 
 Added line 160 (via GitHub). 
 
+Added line 162 (via RStudio). 
+
 ```
