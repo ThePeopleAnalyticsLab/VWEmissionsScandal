@@ -157,4 +157,6 @@ MCHk1 <- as.data.frame(MCHk1)
 
 This is Andrew's test. 
 
+Added line 160 (via GitHub). 
+
 ```
